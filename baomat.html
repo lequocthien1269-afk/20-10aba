@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <title>20/10 - Hệ thống AI</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%}
+    body{
+      background: radial-gradient(circle at center, #060607, #000000);
+      font-family: "Segoe UI", Tahoma, Verdana, sans-serif;
+      color:#00ffea;
+      overflow:hidden;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+    }
+
+    .stage{
+      position:relative;
+      width:90vw;
+      max-width:1100px;
+      height:70vh;
+      min-height:420px;
+      border-radius:12px;
+      overflow:hidden;
+      box-shadow:0 10px 40px rgba(0,0,0,0.6), inset 0 0 60px rgba(0,255,230,0.03);
+      background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.8));
+    }
+    #matrixCanvas,#fireworkCanvas{
+      position:absolute;left:0;top:0;width:100%;height:100%;
+    }
+    #matrixCanvas{z-index:0}
+    #fireworkCanvas{z-index:3;pointer-events:none}
+    #dimmer{
+      position:absolute;left:0;top:0;width:100%;height:100%;
+      background:radial-gradient(circle at center, rgba(0,0,0,0.2), rgba(0,0,0,0.6));
+      z-index:1;pointer-events:none;
+    }
+
+    .door {
+      position:absolute;
+      top:0;
+      width:50%;
+      height:100%;
+      z-index:4;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transition:transform 1s cubic-bezier(.2,.9,.2,1), opacity 0.6s;
+      background:linear-gradient(180deg, rgba(0,255,230,0.06), rgba(0,0,0,0.05));
+      backdrop-filter: blur(6px);
+    }
+    .door.left{left:0;}
+    .door.right{right:0;}
+    .stage.open .door.left{ transform: translateX(-105%); opacity:0.98; }
+    .stage.open .door.right{ transform: translateX(105%); opacity:0.98; }
+
+    .topbar{
+      margin-bottom:14px;
+      color:#00ffea;
+      text-shadow:0 0 10px rgba(0,255,230,0.12);
+    }
+    .title{
+      font-size:1.8rem;
+      letter-spacing:2px;
+      margin-bottom:6px;
+      text-align:center;
+    }
+    .sub {
+      font-size:0.9rem;
+      color:rgba(0,255,234,0.82);
+      opacity:0.9;
+    }
+
+    .controls { 
+      margin-top:16px; 
+      z-index:6; 
+      opacity:1;
+      position:relative; 
+    }
+
+    .btn {
+      margin-top:6px;
+      border:2px solid rgba(0,255,230,0.95);
+      background:transparent;
+      color:#00ffea;
+      padding:12px 25px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:700;
+      letter-spacing:1px;
+      font-size:18px;
+      transition:all .3s;
+      box-shadow:0 0 20px rgba(0,255,230,0.3), inset 0 0 20px rgba(0,255,230,0.2);
+      overflow:hidden;
+      position:relative;
+    }
+    .btn::before {
+      content:"";
+      position:absolute;
+      top:0;
+      left:-100%;
+      width:100%;
+      height:100%;
+      background:linear-gradient(120deg, transparent, rgba(0,255,230,0.6), transparent);
+      transition:0.6s;
+    }
+    .btn:hover::before { left:100%; }
+    .btn:hover{
+      transform:scale(1.05);
+      box-shadow:0 0 40px rgba(0,255,230,0.8);
+    }
+
+    .pulse {
+      position:absolute;
+      top:50%;
+      left:50%;
+      transform:translate(-50%,-50%);
+      width:30px;
+      height:30px;
+      border-radius:50%;
+      background:rgba(0,255,230,0.2);
+      border:2px solid rgba(0,255,230,0.5);
+      animation:pulseEffect 1s ease-out forwards;
+      pointer-events:none;
+      z-index:5;
+    }
+    @keyframes pulseEffect {
+      0% {transform:translate(-50%,-50%) scale(0.2); opacity:1;}
+      100% {transform:translate(-50%,-50%) scale(30); opacity:0;}
+    }
+
+    .inner {
+      position:absolute;
+      left:0; top:0; width:100%; height:100%;
+      z-index:2;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      padding:36px;
+      text-align:center;
+      pointer-events:none;
+    }
+
+    #message{
+      width:100%;
+      max-width:860px;
+      color:#bffcf3;
+      font-family: "Courier New", monospace;
+      font-size:1.05rem;
+      line-height:1.6;
+      display:none;
+      white-space:pre-wrap;
+      text-shadow:0 0 6px rgba(0,255,230,0.1);
+      pointer-events:auto;
+      border: 2px solid rgba(0,255,230,0.4);
+      padding: 20px;
+      border-radius: 12px;
+      background: rgba(0, 20, 20, 0.3);
+      box-shadow: 0 0 25px rgba(0,255,230,0.3), inset 0 0 15px rgba(0,255,230,0.2);
+      animation: glowBox 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glowBox {
+      0% { box-shadow: 0 0 15px rgba(0,255,230,0.2), inset 0 0 10px rgba(0,255,230,0.1);}
+      100% { box-shadow: 0 0 30px rgba(0,255,230,0.7), inset 0 0 20px rgba(0,255,230,0.3);}
+    }
+
+    @media (max-width:720px){
+      .stage{height:74vh}
+      #message{font-size:0.95rem}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="title">HỆ THỐNG ABA</div>
+    <div class="sub">Kích hoạt hệ thống để nhận món quà đặc biệt</div>
+  </div>
+
+  <div class="stage" id="stage">
+    <canvas id="matrixCanvas"></canvas>
+    <canvas id="fireworkCanvas"></canvas>
+    <div id="dimmer"></div>
+    <div class="door left"></div>
+    <div class="door right"></div>
+    <div class="inner">
+      <div id="message"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="activate">KÍCH HOẠT</button>
+  </div>
+
+  <audio id="bgMusic" loop>
+    <source src="music.mp3" type="audio/mpeg">
+  </audio>
+
+  <script>
+  // MATRIX nền
+  const matrix = document.getElementById('matrixCanvas');
+  const mCtx = matrix.getContext('2d');
+  const chars = "01ABCDEFGHIJKLMNOPQRSTUVWXYZ@#$%^&*()<>/\\|[]{}~".split('');
+  const fontSize = 14;
+  let cols = 0, drops = [];
+  function resizeMatrix(){
+    matrix.width = matrix.clientWidth;
+    matrix.height = matrix.clientHeight;
+    cols = Math.floor(matrix.width / fontSize);
+    drops = Array.from({length: cols}, ()=>1);
+  }
+  window.addEventListener('resize', resizeMatrix);
+  resizeMatrix();
+  setInterval(()=>{
+    mCtx.fillStyle="rgba(0,0,0,0.06)";
+    mCtx.fillRect(0,0,matrix.width,matrix.height);
+    mCtx.fillStyle="#00ffea";
+    mCtx.font=fontSize+"px monospace";
+    for(let i=0;i<drops.length;i++){
+      const ch = chars[Math.floor(Math.random()*chars.length)];
+      mCtx.fillText(ch, i*fontSize, drops[i]*fontSize);
+      if(drops[i]*fontSize > matrix.height && Math.random() > 0.975) drops[i]=0;
+      drops[i]++;
+    }
+  },33);
+
+  // FIREWORK
+  const fwCanvas = document.getElementById('fireworkCanvas');
+  const fCtx = fwCanvas.getContext('2d');
+  function resizeFirework(){ fwCanvas.width = fwCanvas.clientWidth; fwCanvas.height = fwCanvas.clientHeight; }
+  window.addEventListener('resize', resizeFirework);
+  resizeFirework();
+  function rand(min,max){ return Math.random()*(max-min)+min; }
+  function hueToColor(h,a=1){ return `hsla(${h},100%,60%,${a})`; }
+
+  class Particle {
+    constructor(x,y,vx,vy,h,life,decay){
+      this.x=x;this.y=y;this.vx=vx;this.vy=vy;this.h=h;this.life=life;this.decay=decay;
+      this.alpha=1;this.trail=[];this.trailLimit=8;
+    }
+    update(dt){
+      this.trail.push({x:this.x,y:this.y});
+      if(this.trail.length>this.trailLimit)this.trail.shift();
+      this.vx*=0.985;this.vy+=0.03;
+      this.x+=this.vx*dt;this.y+=this.vy*dt;
+      this.life-=this.decay*dt;
+      this.alpha=Math.max(0,this.life);
+    }
+    draw(ctx){
+      for(let i=0;i<this.trail.length;i++){
+        const p=this.trail[i];
+        const t=i/this.trail.length;
+        ctx.fillStyle=`hsla(${this.h},100%,70%,${0.03+t*0.08})`;
+        ctx.fillRect(p.x,p.y,2,2);
+      }
+      ctx.beginPath();
+      ctx.fillStyle=`hsla(${this.h},100%,65%,${this.alpha})`;
+      ctx.arc(this.x,this.y,2.5+(this.alpha*2.5),0,Math.PI*2);
+      ctx.fill();
+    }
+  }
+
+  class Rocket {
+    constructor(x,targetY,hue){
+      this.x=x;this.y=fwCanvas.height+10;
+      this.vx=rand(-0.6,0.6);this.vy=rand(-7,-9);
+      this.targetY=targetY;this.hue=hue;
+      this.exploded=false;this.particles=[];
+    }
+    update(dt){
+      if(this.exploded){
+        this.particles.forEach(p=>p.update(dt));
+        this.particles=this.particles.filter(p=>p.life>0.01);
+      } else {
+        this.vy+=0.06;this.x+=this.vx*dt;this.y+=this.vy*dt;
+        if(this.y<=this.targetY||this.vy>=-0.5)this.explode();
+      }
+    }
+    explode(){
+      this.exploded=true;
+      const count=Math.floor(rand(25,40));
+      for(let i=0;i<count;i++){
+        const angle=Math.random()*Math.PI*2;
+        const speed=rand(2.5,6.5);
+        const vx=Math.cos(angle)*speed;
+        const vy=Math.sin(angle)*speed;
+        const life=rand(1,2);
+        const decay=rand(0.008,0.015);
+        this.particles.push(new Particle(this.x,this.y,vx,vy,(this.hue+rand(-20,20))%360,life,decay));
+      }
+    }
+    draw(ctx){
+      if(this.exploded)this.particles.forEach(p=>p.draw(ctx));
+      else {
+        const g=ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,30);
+        g.addColorStop(0,hueToColor(this.hue,1));
+        g.addColorStop(0.35,hueToColor(this.hue,0.8));
+        g.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=g;
+        ctx.fillRect(this.x-30,this.y-30,60,60);
+      }
+    }
+  }
+
+  const rockets = [];
+  let lastTime = performance.now();
+  function loop(now){
+    const dt = Math.min(1.5,(now-lastTime)/16.666);
+    lastTime=now;
+    fCtx.globalCompositeOperation='destination-out';
+    fCtx.fillStyle='rgba(0,0,0,0.18)';
+    fCtx.fillRect(0,0,fwCanvas.width,fwCanvas.height);
+    fCtx.globalCompositeOperation='lighter';
+    rockets.forEach(r=>r.update(dt));
+    rockets.forEach(r=>r.draw(fCtx));
+    for(let i=rockets.length-1;i>=0;i--)if(rockets[i].exploded&&rockets[i].particles.length===0)rockets.splice(i,1);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
+  // LỜI CHÚC
+  const stage=document.getElementById('stage');
+  const btn=document.getElementById('activate');
+  const msgEl=document.getElementById('message');
+  const audio=document.getElementById('bgMusic');
+
+  const text =
+  "🌸 HỆ THỐNG AI ĐANG KÍCH HOẠT...\n"+
+  "🤖 Phát hiện: Một bông hồng xinh đẹp\n"+
+  "✨ Gửi tín hiệu chúc mừng đặc biệt:\n\n"+
+  "💡 Chúc bạn một ngày 20/10 thật nhiều niềm vui, hạnh phúc và bất ngờ đáng nhớ!\n"+
+  "🚀 Mong rằng hôm nay bạn sẽ mỉm cười thật nhiều, được yêu thương thật nhiều,\n"+
+  "✨ Và mãi rạng rỡ như bông hoa đẹp nhất!\n"+
+  "🪄 Mạnh mẽ - Xinh đẹp - Tự tin!\n\n"+
+  "🌷 Happy 20/10 🌷";
+
+  let index=0;
+  function typeWriter(){
+    if(index<text.length){
+      msgEl.innerHTML+=text.charAt(index);
+      index++;
+      setTimeout(typeWriter,28);
+    }
+  }
+
+  function openDoorsAndShow(){
+    const pulse=document.createElement('div');
+    pulse.className='pulse';
+    document.body.appendChild(pulse);
+    setTimeout(()=>pulse.remove(),1000);
+
+    stage.classList.add('open');
+    setTimeout(()=>{
+      msgEl.style.display='block';
+      msgEl.innerHTML='';
+      index=0;
+      typeWriter();
+      for (let i = 0; i < 2; i++) {
+        setTimeout(() => {
+          for (let k = 0; k < 2; k++) {
+            rockets.push(new Rocket(rand(120, fwCanvas.width - 120), rand(80, fwCanvas.height * 0.35), rand(0, 360)));
+          }
+        }, i * 500);
+      }
+      try { audio.currentTime = 80; audio.play(); } catch(e){}
+    }, 450);
+  }
+
+  btn.addEventListener('click', openDoorsAndShow);
+  </script>
+</body>
+</html>
